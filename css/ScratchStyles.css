@@ -1,0 +1,65 @@
+.mainbody{
+    background-color: #DDE6D5;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+}
+
+.common{
+    text-align: center;
+    font-family:'Times New Roman', Times, serif;
+}
+
+.Header{
+    background-color:#2F5233;
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    padding-top: 10px;
+    text-align: center;
+}
+
+.Footer{  
+    background-color: #2F5233;
+    
+    height: 40px;
+    
+    bottom: 0px;
+    left: 1px;
+    right: 1px;
+    padding-top: 15px;
+}
+
+img{
+    display: block; 
+    margin-left: auto;
+    margin-right: auto;
+    width: 50%;
+}
+
+nav{
+    background-color: #5d9659;
+    padding: 10px;
+    overflow: hidden;
+}
+
+nav a{
+    font-size: 16px;
+    font-weight: bold;
+    text-decoration: none;
+    color: #333;
+    padding: 10px 20px;
+}
+
+nav a:hover{
+    background-color: rgb(24, 197, 38);
+}
+
+#TopOfPage{
+    text-decoration: underline;
+}
+
+a:hover {
+    color: #F5F5F5;
+    text-decoration: underline;
+  }
+
+a{
+    color: lightseagreen;
+}

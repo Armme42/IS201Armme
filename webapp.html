@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Russian Roulette Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #1e1e1e;
+      color: #f4f4f4;
+      text-align: center;
+      padding: 20px;
+      position: relative;
+    }
+    .btn {
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      background-color: #444;
+      color: white;
+      transition: background 0.3s;
+    }
+    .btn:hover {
+      background-color: #666;
+    }
+    .status {
+      margin-top: 20px;
+      font-size: 18px;
+      white-space: pre-line;
+    }
+    .money {
+      margin-top: 10px;
+      font-size: 20px;
+      color: #3ee373;
+    }
+    .dead {
+      color: red;
+    }
+    .out {
+      color: orange;
+    }
+
+    .scoreboard {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #ffec8b;
+    }
+
+    /* Gun Styling */
+    .gun-container {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 300px;
+      height: 150px;
+    }
+
+    .revolver {
+      position: relative;
+      width: 200px;
+      height: 60px;
+      margin: 0 auto;
+      transform-origin: left center;
+      transition: transform 0.2s;
+    }
+
+    .revolver.trigger-pull {
+      transform: rotate(-3deg);
+    }
+
+    .barrel {
+      position: absolute;
+      left: 0;
+      top: 20px;
+      width: 120px;
+      height: 20px;
+      background: #777;
+      border-radius: 5px;
+    }
+
+    .muzzle {
+      position: absolute;
+      left: 120px;
+      top: 24px;
+      width: 10px;
+      height: 12px;
+      background: #aaa;
+      border-radius: 2px;
+    }
+
+    .cylinder {
+      position: absolute;
+      left: 40px;
+      top: 10px;
+      width: 30px;
+      height: 40px;
+      background: #444;
+      border-radius: 50%;
+      border: 4px solid #666;
+    }
+
+    .handle {
+      position: absolute;
+      left: 10px;
+      top: 40px;
+      width: 30px;
+      height: 40px;
+      background: #552200;
+      border-radius: 10px 0 20px 20px;
+    }
+
+    .trigger-guard {
+      position: absolute;
+      left: 30px;
+      top: 45px;
+      width: 15px;
+      height: 15px;
+      border: 3px solid #999;
+      border-top: none;
+      border-left: none;
+      border-radius: 0 0 10px 10px;
+    }
+
+    .muzzle-flash {
+      position: absolute;
+      left: 130px;
+      top: 12px;
+      width: 40px;
+      height: 40px;
+      background: radial-gradient(circle, orange, red, transparent);
+      border-radius: 50%;
+      animation: flash 0.3s ease-out;
+      pointer-events: none;
+    }
+
+    @keyframes flash {
+      0% { opacity: 1; transform: scale(1); }
+      100% { opacity: 0; transform: scale(2); }
+    }
+  </style>
+</head>
+<body>
+  <h1>Russian Roulette</h1>
+  <p>Each round adds $1000. Pull the trigger or leave with your money!</p>
+  
+  <button class="btn" onclick="pullTrigger()">Pull Trigger</button>
+  <button class="btn" onclick="leaveGame()">Leave with Money</button>
+  <button class="btn" onclick="resetGame()">Start Over</button>
+  
+  <div class="money" id="money"></div>
+  <div class="status" id="status"></div>
+  <div class="scoreboard" id="scoreboard">
+    🕹️ Last Escape: $0<br>
+    🏆 High Score: $0
+  </div>
+
+  <div class="gun-container">
+    <div class="revolver" id="revolver">
+      <div class="barrel"></div>
+      <div class="muzzle"></div>
+      <div class="cylinder"></div>
+      <div class="handle"></div>
+      <div class="trigger-guard"></div>
+    </div>
+  </div>
+
+  <script>
+    let players = [
+      { name: 'You', alive: true, out: false, money: 0 },
+      { name: 'Computer 1', alive: true, out: false, money: 0 },
+      { name: 'Computer 2', alive: true, out: false, money: 0 }
+    ];
+    let roundMoney = 1000;
+    let gameOver = false;
+
+    const statusDiv = document.getElementById('status');
+    const scoreboardDiv = document.getElementById('scoreboard');
+    const revolver = document.getElementById('revolver');
+
+    function getHighScore() {
+      return parseInt(localStorage.getItem("highScore") || "0");
+    }
+
+    function setHighScore(score) {
+      localStorage.setItem("highScore", score.toString());
+    }
+
+    function updateScoreboard(latestScore = null) {
+      let high = getHighScore();
+      if (latestScore !== null) {
+        scoreboardDiv.innerHTML = `🕹️ Last Escape: $${latestScore}<br>🏆 High Score: $${high}`;
+      } else {
+        scoreboardDiv.innerHTML = `🕹️ Last Escape: $0<br>🏆 High Score: $${high}`;
+      }
+    }
+
+    function updateStatus() {
+      let statusText = players.map(p => {
+        if (!p.alive) return `${p.name}: 💀 <span class="dead">DEAD</span>`;
+        if (p.out) return `${p.name}: 🏃 <span class="out">LEFT with $${p.money}</span>`;
+        return `${p.name}: 💰 $${p.money}`;
+      }).join('\n');
+      statusDiv.innerHTML = statusText;
+    }
+
+    function playGunAnimation(isDeath) {
+      revolver.classList.add('trigger-pull');
+      if (isDeath) {
+        const flash = document.createElement('div');
+        flash.className = 'muzzle-flash';
+        revolver.appendChild(flash);
+        setTimeout(() => flash.remove(), 300);
+      }
+      setTimeout(() => revolver.classList.remove('trigger-pull'), 300);
+    }
+
+    function pullTrigger() {
+      if (gameOver || !players[0].alive || players[0].out) return;
+      let chamber = Math.floor(Math.random() * 6);
+      let bullet = Math.floor(Math.random() * 6);
+      let isDead = chamber === bullet;
+
+      playGunAnimation(isDead);
+
+      if (isDead) {
+        players[0].alive = false;
+        players[0].money = 0;
+        gameOver = true;
+        statusDiv.innerHTML += `\nYou pulled the trigger... 💥 DEAD!`;
+        updateScoreboard(0);
+      } else {
+        players[0].money += roundMoney;
+        statusDiv.innerHTML += `\nYou pulled the trigger... CLICK. You're safe.`;
+        runComputerTurns();
+      }
+      updateStatus();
+    }
+
+    function leaveGame() {
+      if (!players[0].alive || players[0].out || gameOver) return;
+      players[0].out = true;
+      statusDiv.innerHTML += `\nYou decided to leave the game with $${players[0].money}.`;
+
+      // Save high score
+      let latest = players[0].money;
+      let high = getHighScore();
+      if (latest > high) {
+        setHighScore(latest);
+      }
+      updateScoreboard(latest);
+      updateStatus();
+      runComputerTurns();
+    }
+
+    function runComputerTurns() {
+      for (let i = 1; i < players.length; i++) {
+        let p = players[i];
+        if (!p.alive || p.out) continue;
+
+        // 30% chance to leave if they have $3000+
+        if (p.money >= 3000 && Math.random() < 0.3) {
+          p.out = true;
+          statusDiv.innerHTML += `\n${p.name} left the game with $${p.money}.`;
+          continue;
+        }
+
+        let chamber = Math.floor(Math.random() * 6);
+        let bullet = Math.floor(Math.random() * 6);
+        if (chamber === bullet) {
+          p.alive = false;
+          p.money = 0;
+          statusDiv.innerHTML += `\n${p.name} pulled the trigger... 💥 DEAD!`;
+        } else {
+          p.money += roundMoney;
+          statusDiv.innerHTML += `\n${p.name} pulled the trigger... CLICK. Safe.`;
+        }
+      }
+
+      if (players.every(p => !p.alive || p.out)) {
+        statusDiv.innerHTML += `\n\n🎉 Game Over! Everyone's done.`;
+        gameOver = true;
+      }
+
+      roundMoney += 1000;
+      updateStatus();
+    }
+
+    function resetGame() {
+      players = [
+        { name: 'You', alive: true, out: false, money: 0 },
+        { name: 'Computer 1', alive: true, out: false, money: 0 },
+        { name: 'Computer 2', alive: true, out: false, money: 0 }
+      ];
+      roundMoney = 1000;
+      gameOver = false;
+      statusDiv.innerHTML = '';
+      updateStatus();
+      updateScoreboard(0);
+    }
+
+    updateStatus();
+    updateScoreboard(0);
+  </script>
+</body>
+</html>
